@@ -11,5 +11,5 @@ graph LR
 ```mermaid
 graph LR
     A[collect mail data - Google Apps Script] --> B[dataset]
-    D[model -Google Colab] --> B
+    D[model -Google Colab] --> |use| B
 ```
