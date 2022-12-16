@@ -1,0 +1,32 @@
+{
+  "timeZone": "Asia/Tokyo",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.addons.execute",
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.labels",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/script.scriptapp",
+    "https://www.googleapis.com/auth/gmail.modify"
+  ],
+  "addOns": {
+    "common": {
+      "name": "mail_classification",
+      "logoUrl": "https://hiyokoyarou.com/wp-content/uploads/2017/07/penpenguin.png",
+      "homepageTrigger": {
+        "enabled": true,
+        "runFunction": "createTimeDrivenTriggers"
+      }
+    },
+    "gmail": {
+      "homepageTrigger": {
+        "enabled": true,
+        "runFunction": "createTimeDrivenTriggers"
+      }
+    }
+  },
+  "urlFetchWhitelist": [
+    "https://inferenceapi-a6xvnhojvq-an.a.run.app/"
+  ]
+}

@@ -1,0 +1,9 @@
+Flask==2.1.0
+gunicorn==20.1.0
+transformers
+sentencepiece==0.1.97
+unidic-lite==1.0.8
+fugashi
+ipadic
+torch
+numpy
