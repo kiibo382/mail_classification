@@ -1,75 +1,48 @@
-/**
- * Creates two time-driven triggers.
- * @see https://developers.google.com/apps-script/guides/triggers/installable#time-driven_triggers
- */
-function createTimeDrivenTriggers() {
-  const allTriggers = ScriptApp.getProjectTriggers();
-  let has_trigger = false;
-  for (let index = 0; index < allTriggers.length; index++) {
-    // If the current trigger is the correct one, delete it.
-    if (allTriggers[index].getUniqueId() === 'myFunction') {
-      has_trigger = true;
-      break;
-    }
-  }
-
-  if (!has_trigger) {
-    // Trigger every 1 hours.
-    ScriptApp.newTrigger('myFunction')
-        .timeBased()
-        .everyHours(1)
-        .create();
-  }
-  myFunction();
-}
+// https://support.google.com/mail/answer/7190?hl=en#:~:text=Messages%20in%20a%20certain%20category
+// category:primary
+// category:social
+// category:promotions
+// category:updates
+// category:forums
+// category:reservations
+// category:purchases
 
 function myFunction() {
-  const threads = GmailApp.search('-label:"Categorized"', 0, 50);
+  const spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadSheet.getSheetByName('test3');
 
-  const SERVER_URL = "https://inferenceapi-a6xvnhojvq-an.a.run.app"
-  const id2label = JSON.parse(UrlFetchApp.fetch(`${SERVER_URL}/labels`).getContentText('UTF-8')).labels;
+  sheet.getRange(1, 1).setValue("from");
+  sheet.getRange(1, 2).setValue("title");
+  sheet.getRange(1, 3).setValue("content");
+  sheet.getRange(1, 4).setValue("label");
 
-  Logger.log(id2label);
+  const categories = ['primary']
 
-  let gmailApps = {};
-  for (const key in id2label) {
-    if (!GmailApp.getUserLabelByName(id2label[key])) {
-      GmailApp.createLabel(id2label[key]);
+  let column_start_index = 0
+  for (let c = 0; c < categories.length; c++) {
+    for (let k = 0; k < 2; k++) {
+      column_start_index = 500*(2*c+k)
+      // まとめて行追加した方が速い
+      sheet.insertRowsAfter(column_start_index+2, 500)
+      const threads = GmailApp.search(`category:${categories[c]}`, 500*k, 500);
+
+      for (let i = 0 ; i < threads.length; i++) {
+        const msgs = GmailApp.getMessagesForThread(threads[i]);
+        // Logger.log(`${categories[c]}: ` + msgs[0].getSubject());
+
+        const regex = /<.*>/;
+        let mail_address_with_square = msgs[0].getFrom().match(regex);
+        let mail_address = ""
+        if (mail_address_with_square) {
+          mail_address = mail_address_with_square[0].slice(1, -1);
+        } else {
+          mail_address = msgs[0].getFrom();
+        }
+        sheet.getRange(column_start_index+2+i, 1).setValue(mail_address);
+        sheet.getRange(column_start_index+2+i, 2).setValue(msgs[0].getSubject());
+        sheet.getRange(column_start_index+2+i, 3).setValue(msgs[0].getPlainBody());
+        sheet.getRange(column_start_index+2+i, 4).setValue(categories[c]);
+      }
     }
-    gmailApps[key] = GmailApp.getUserLabelByName(id2label[key]);
-  }
-  if (!GmailApp.getUserLabelByName("Categorized")) {
-    GmailApp.createLabel("Categorized");
-  }
-  let categorized_label = GmailApp.getUserLabelByName("Categorized");
-
-  for (let i = 0 ; i < threads.length; i++) {
-    const msgs = GmailApp.getMessagesForThread(threads[i]);
-
-    Logger.log(msgs[0].getSubject());
-
-    let mail_address_with_square = msgs[0].getFrom().match(/<.*>/);
-    let mail_address = ""
-    if (mail_address_with_square) {
-      mail_address = mail_address_with_square[0].slice(1, -1);
-    } else {
-      mail_address = msgs[0].getFrom();
-    }
-
-    // Make a POST request with a JSON payload.
-    const data = {
-      'content': `${mail_address}[SEP]${msgs[0].getSubject()}`
-    };
-    const options = {
-      'method' : 'post',
-      'contentType': 'application/json',
-      'payload' : JSON.stringify(data)
-    };
-    const res = JSON.parse(UrlFetchApp.fetch(`${SERVER_URL}/predict`, options).getContentText('UTF-8'));
-    Logger.log(`prediction: ${res.prediction}`)
-    
-    gmailApps[res.prediction].addToThread(threads[i])
-
-    categorized_label.addToThread(threads[i])
   }
 }

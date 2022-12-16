@@ -13,7 +13,7 @@
   "addOns": {
     "common": {
       "name": "mail_classification",
-      "logoUrl": "https://hiyokoyarou.com/wp-content/uploads/2017/07/penpenguin.png",
+      "logoUrl": "https://storage.cloud.google.com/mail_classification_icons/S__16900102.jpg",
       "homepageTrigger": {
         "enabled": true,
         "runFunction": "createTimeDrivenTriggers"

@@ -3,30 +3,21 @@
  * @see https://developers.google.com/apps-script/guides/triggers/installable#time-driven_triggers
  */
 function createTimeDrivenTriggers() {
-  const allTriggers = ScriptApp.getProjectTriggers();
-  let has_trigger = false;
-  for (let index = 0; index < allTriggers.length; index++) {
-    // If the current trigger is the correct one, delete it.
-    if (allTriggers[index].getUniqueId() === 'myFunction') {
-      has_trigger = true;
-      break;
-    }
-  }
-
-  if (!has_trigger) {
+  if (ScriptApp.getProjectTriggers().length < 1) {
     // Trigger every 1 hours.
-    ScriptApp.newTrigger('myFunction')
+    ScriptApp.newTrigger('categorize')
         .timeBased()
         .everyHours(1)
         .create();
   }
-  myFunction();
+  categorize();
 }
 
-function myFunction() {
+function categorize() {
   const threads = GmailApp.search('-label:"Categorized"', 0, 50);
 
-  const SERVER_URL = "https://inferenceapi-a6xvnhojvq-an.a.run.app"
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const SERVER_URL = scriptProperties.getProperty('SERVER_URL');
   const id2label = JSON.parse(UrlFetchApp.fetch(`${SERVER_URL}/labels`).getContentText('UTF-8')).labels;
 
   Logger.log(id2label);
@@ -48,9 +39,18 @@ function myFunction() {
 
     Logger.log(msgs[0].getSubject());
 
+    let mail_address_with_square = msgs[0].getFrom().match(/<.*>/);
+    let mail_address = ""
+    if (mail_address_with_square) {
+      mail_address = mail_address_with_square[0].slice(1, -1);
+    } else {
+      mail_address = msgs[0].getFrom();
+    }
+
     // Make a POST request with a JSON payload.
+    const content = `[SEP]${msgs[0].getPlainBody().replace(/--|ーー|＝＝|==|━━|__|…|...|\r\n|\n|\r/g, "")}`
     const data = {
-      'title': msgs[0].getSubject()
+      'content': `${mail_address}[SEP]${msgs[0].getSubject()}[SEP]${content}`
     };
     const options = {
       'method' : 'post',
@@ -58,8 +58,8 @@ function myFunction() {
       'payload' : JSON.stringify(data)
     };
     const res = JSON.parse(UrlFetchApp.fetch(`${SERVER_URL}/predict`, options).getContentText('UTF-8'));
+
     Logger.log(`prediction: ${res.prediction}`)
-    
     gmailApps[res.prediction].addToThread(threads[i])
 
     categorized_label.addToThread(threads[i])
